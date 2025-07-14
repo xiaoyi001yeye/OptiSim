@@ -296,8 +296,8 @@
                         <rect x="350" y="45" width="20" height="60" fill="#f59e0b" rx="3"></rect>
                         <text x="360" y="115" font-size="8" fill="#d97706" text-anchor="middle">Object</text>
                         <!-- Light Rays -->
-                        <line x1="100" y1="75" x2="350" y2="45" stroke="#fbbf24" stroke-width="0.5"></line>
-                        <line x1="100" y1="75" x2="350" y2="105" stroke="#fbbf24" stroke-width="0.5"></line>
+                        <line id="diag-ray-top" x1="100" y1="75" x2="350" y2="45" stroke="#fbbf24" stroke-width="0.5"></line>
+                        <line id="diag-ray-bottom" x1="100" y1="75" x2="350" y2="105" stroke="#fbbf24" stroke-width="0.5"></line>
                         <!-- Dimensions -->
                         <line x1="100" y1="120" x2="350" y2="120" stroke="#6b7280" stroke-width="1"></line>
                         <line x1="100" y1="115" x2="100" y2="125" stroke="#6b7280" stroke-width="1"></line>
@@ -357,27 +357,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 2. Core Calculations
-        
-        // --- Focal Length ---
+
+        // --- Ideal Focal Length ---
         // The required Field of View is the object size scaled by the coverage
-        const fovW = objectW / coverage;
-        const fovH = objectH / coverage; // Also calculate for height for completeness
-        
-        // Using the thin lens equation (similar triangles):
-        // focalLength / sensorWidth = workingDistance / fovWidth
-        const focalLength = (sensorW * wd) / fovW;
+        const requiredFovW = objectW / coverage;
+        const idealFocalLength = (sensorW * wd) / requiredFovW;
+        document.getElementById('focalLength').textContent = idealFocalLength.toFixed(1);
 
-        document.getElementById('focalLength').textContent = focalLength.toFixed(1);
-
-        // Find nearest standard focal length
+        // --- Standard Focal Length ---
+        // Find the closest standard focal length to the ideal one.
         const nearestFL = standardFocalLengths.reduce((prev, curr) => {
-            return (Math.abs(curr - focalLength) < Math.abs(prev - focalLength) ? curr : prev);
+            return (Math.abs(curr - idealFocalLength) < Math.abs(prev - idealFocalLength) ? curr : prev);
         });
         document.getElementById('standardFocalLength').textContent = `${nearestFL}mm`;
 
-        // --- Field of View (using the calculated focal length) ---
-        const actualFovW = (sensorW * wd) / focalLength;
-        const actualFovH = (sensorH * wd) / focalLength;
+        // --- Actual Calculations (based on Standard Focal Length) ---
+        // All subsequent calculations should use the 'nearestFL' as it's the lens that would be used in reality.
+        
+        // --- Actual Field of View ---
+        const actualFovW = (sensorW * wd) / nearestFL;
+        const actualFovH = (sensorH * wd) / nearestFL;
         document.getElementById('fov').textContent = `${actualFovW.toFixed(1)} x ${actualFovH.toFixed(1)}`;
 
         // --- Pixel Accuracy ---
@@ -385,26 +384,24 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('accuracy').textContent = accuracy.toFixed(3);
 
         // --- Depth of Field ---
-        // Circle of Confusion (CoC) estimation. A common rule of thumb is diagonal/1500
+        // Use nearestFL for DoF calculations.
         const sensorDiagonal = Math.sqrt(sensorW**2 + sensorH**2);
-        const coc = sensorDiagonal / 1500; 
-
-        // Hyperfocal distance
-        const hyperfocal = (focalLength**2) / (aperture * coc) + focalLength;
+        const coc = sensorDiagonal / 1500; // CoC based on sensor size
+        const hyperfocal = (nearestFL**2) / (aperture * coc) + nearestFL;
         
-        // DoF calculation
-        const dofNear = (hyperfocal * wd) / (hyperfocal + (wd - focalLength));
+        const dofNear = (hyperfocal * wd) / (hyperfocal + (wd - nearestFL));
         let dofFar;
         if (hyperfocal > wd) {
-            dofFar = (hyperfocal * wd) / (hyperfocal - (wd - focalLength));
+            dofFar = (hyperfocal * wd) / (hyperfocal - (wd - nearestFL));
         } else {
-            dofFar = Infinity; // If focused beyond hyperfocal, DoF extends to infinity
+            dofFar = Infinity; // Focused beyond hyperfocal distance, DoF extends to infinity
         }
         
         const totalDof = dofFar - dofNear;
         
         if (isFinite(totalDof)) {
-            document.getElementById('dof').textContent = `± ${(totalDof / 2).toFixed(1)}`;
+            // Display the total depth range, which is more intuitive than +/-
+            document.getElementById('dof').textContent = totalDof.toFixed(1);
             document.getElementById('dofRange').textContent = `${dofNear.toFixed(1)} ~ ${dofFar.toFixed(1)} mm`;
         } else {
             document.getElementById('dof').textContent = `∞`;
@@ -412,12 +409,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // --- ISO Calculation ---
-        // Using the EV formula: EV = log2(N^2 / t) where N is aperture, t is time
-        // Required ISO = 100 * 2^(Target_EV - EV_at_ISO100)
         const ev_at_100 = Math.log2((aperture**2) / shutter);
         const requiredISO = 100 * Math.pow(2, lightEV - ev_at_100);
         
-        // Snap to standard ISO values
         const standardISOs = [100, 200, 400, 800, 1600, 3200, 6400, 12800];
         const nearestISO = standardISOs.reduce((prev, curr) => {
             return (Math.abs(curr - requiredISO) < Math.abs(prev - requiredISO) ? curr : prev);
@@ -427,6 +421,21 @@ document.addEventListener('DOMContentLoaded', () => {
         // 3. Update Diagram
         document.getElementById('diag-wd').textContent = `WD: ${wd}mm`;
         document.getElementById('diag-obj').textContent = `Obj H: ${objectH}mm`;
+
+        // Update diagram's light rays to reflect the actual FOV from the standard lens
+        const rayTop = document.getElementById('diag-ray-top');
+        const rayBottom = document.getElementById('diag-ray-bottom');
+        const diagramFovCenterY = 75;
+        
+        // The diagram's object is 60 SVG units high. We use the input object height to create a dynamic scale.
+        // This ensures the FOV cone scales relative to the object's size representation.
+        if (objectH > 0) {
+            const verticalScale = 60 / objectH; // SVG units per mm
+            const diagramFovYSpan = (actualFovH * verticalScale) / 2;
+            
+            rayTop.setAttribute('y2', (diagramFovCenterY - diagramFovYSpan).toFixed(2));
+            rayBottom.setAttribute('y2', (diagramFovCenterY + diagramFovYSpan).toFixed(2));
+        }
     }
 
     // Add event listeners to all inputs to trigger recalculation
@@ -442,4 +451,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </body>
 </html>
-

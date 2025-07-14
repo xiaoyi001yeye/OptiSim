@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>机器视觉相机参数计算器 (Machine Vision Camera Calculator)</title>
+    <title>全功能3D机器视觉相机参数计算器 (Full-Featured 3D Vision Calculator)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
         body {
             font-family: 'Inter', 'Noto Sans SC', sans-serif;
@@ -75,19 +77,25 @@
             visibility: visible;
             opacity: 1;
         }
+        #diagram-container canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 0.75rem;
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
 
     <div class="container mx-auto p-4 md:p-8">
         <header class="text-center mb-10">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">机器视觉相机参数计算器</h1>
-            <p class="mt-2 text-lg text-gray-600">帮助您为视觉项目选择最合适的光学系统</p>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">全功能3D机器视觉相机参数计算器</h1>
+            <p class="mt-2 text-lg text-gray-600">帮助您为视觉项目选择最合适的光学系统 (3D 可视化版)</p>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Input Column -->
-            <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg">
+            <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg h-fit">
                 <h2 class="text-2xl font-bold mb-6">输入参数</h2>
 
                 <!-- Scene & Object Parameters -->
@@ -193,7 +201,13 @@
 
             <!-- Results Column -->
             <div class="lg:col-span-2">
-                <h2 class="text-2xl font-bold mb-6 text-center lg:text-left">计算结果</h2>
+                <h2 class="text-2xl font-bold mb-6 text-center lg:text-left">计算结果与3D示意图</h2>
+                
+                <!-- 3D Visual Diagram -->
+                <div class="mb-6 bg-gray-200 p-2 rounded-xl shadow-lg">
+                    <div id="diagram-container" class="w-full h-80 md:h-96" style="cursor: grab;"></div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Focal Length -->
                     <div class="result-card md:col-span-2 bg-blue-50 border border-blue-200">
@@ -258,7 +272,7 @@
                             </span>
                         </p>
                         <div>
-                            <span id="dof" class="result-value">+/- 23.5</span>
+                            <span id="dof" class="result-value">47.0</span>
                             <span class="result-unit">mm</span>
                         </div>
                         <div class="text-xs text-gray-500 mt-2">
@@ -281,44 +295,99 @@
                         </div>
                     </div>
                 </div>
-                 <!-- Visual Diagram -->
-                <div class="mt-8 bg-white p-4 rounded-xl shadow-lg">
-                    <h3 class="text-lg font-semibold mb-4 text-center">成像关系示意图</h3>
-                    <svg id="diagram" viewBox="0 0 400 150" class="w-full h-auto">
-                        <!-- Camera -->
-                        <rect x="10" y="55" width="40" height="40" fill="#cbd5e1" rx="5"></rect>
-                        <rect x="45" y="65" width="20" height="20" fill="#94a3b8"></rect>
-                        <line x1="65" y1="75" x2="100" y2="75" stroke="#94a3b8" stroke-width="2"></line>
-                        <!-- Sensor Plane -->
-                         <line x1="30" y1="40" x2="30" y2="110" stroke="#4f46e5" stroke-width="1.5" stroke-dasharray="3 2"></line>
-                         <text x="28" y="35" font-size="8" fill="#4f46e5" text-anchor="end">Sensor</text>
-                        <!-- Object -->
-                        <rect x="350" y="45" width="20" height="60" fill="#f59e0b" rx="3"></rect>
-                        <text x="360" y="115" font-size="8" fill="#d97706" text-anchor="middle">Object</text>
-                        <!-- Light Rays -->
-                        <line id="diag-ray-top" x1="100" y1="75" x2="350" y2="45" stroke="#fbbf24" stroke-width="0.5"></line>
-                        <line id="diag-ray-bottom" x1="100" y1="75" x2="350" y2="105" stroke="#fbbf24" stroke-width="0.5"></line>
-                        <!-- Dimensions -->
-                        <line x1="100" y1="120" x2="350" y2="120" stroke="#6b7280" stroke-width="1"></line>
-                        <line x1="100" y1="115" x2="100" y2="125" stroke="#6b7280" stroke-width="1"></line>
-                        <line x1="350" y1="115" x2="350" y2="125" stroke="#6b7280" stroke-width="1"></line>
-                        <text id="diag-wd" x="225" y="135" font-size="10" fill="#374151" text-anchor="middle">WD: 500mm</text>
-                        
-                        <line x1="380" y1="45" x2="380" y2="105" stroke="#6b7280" stroke-width="1"></line>
-                        <line x1="375" y1="45" x2="385" y2="45" stroke="#6b7280" stroke-width="1"></line>
-                        <line x1="375" y1="105" x2="385" y2="105" stroke="#6b7280" stroke-width="1"></line>
-                        <text id="diag-obj" x="390" y="78" font-size="10" fill="#374151" writing-mode="vertical-rl">Obj H: 80mm</text>
-
-                        <line x1="30" y1="55" x2="30" y2="95" stroke="#4f46e5" stroke-width="1.5" visibility="hidden" id="diag-sensor-line"></line>
-                        <text id="diag-sensor-text" x="20" y="78" font-size="8" fill="#4f46e5" writing-mode="vertical-rl" text-anchor="middle" visibility="hidden">15.6mm</text>
-                    </svg>
-                </div>
-
             </div>
         </div>
     </div>
 
 <script>
+// --- 3D Visualization ---
+let scene, camera, renderer, controls;
+let cameraObj, objectBox, fovCone;
+const scaleFactor = 0.05; // Scale down mm values for a better view in the scene
+
+function init3D() {
+    const container = document.getElementById('diagram-container');
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xe5e7eb);
+    camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 2000);
+    camera.position.set(30, 25, 30);
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    container.appendChild(renderer.domElement);
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.target.set(0, 5, 0);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(20, 50, 30);
+    scene.add(directionalLight);
+    const gridHelper = new THREE.GridHelper(200, 20, 0x9ca3af, 0x9ca3af);
+    scene.add(gridHelper);
+    const cameraBodyMat = new THREE.MeshStandardMaterial({ color: 0x4b5563 });
+    const cameraLensMat = new THREE.MeshStandardMaterial({ color: 0x1f2937 });
+    const body = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 5), cameraBodyMat);
+    const lens = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 3, 32), cameraLensMat);
+    lens.rotation.x = Math.PI / 2;
+    lens.position.z = 4;
+    cameraObj = new THREE.Group();
+    cameraObj.add(body);
+    cameraObj.add(lens);
+    cameraObj.position.set(0, 4, 0);
+    scene.add(cameraObj);
+    const objectMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b });
+    objectBox = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), objectMat);
+    objectBox.position.y = 0.5;
+    scene.add(objectBox);
+    const fovMat = new THREE.LineBasicMaterial({ color: 0x1d4ed8, transparent: true, opacity: 0.7 });
+    const fovGeometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(8 * 3);
+    fovGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const indices = [0,1, 1,3, 3,2, 2,0, 4,5, 5,7, 7,6, 6,4, 0,4, 1,5, 2,6, 3,7];
+    fovGeometry.setIndex(indices);
+    fovCone = new THREE.LineSegments(fovGeometry, fovMat);
+    scene.add(fovCone);
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+    }
+    animate();
+    window.addEventListener('resize', () => {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+}
+
+function update3DDiagram(params) {
+    const { wd, fovW, fovH, objectW, objectH } = params;
+    const scaledWD = wd * scaleFactor;
+    const scaledFovW = fovW * scaleFactor;
+    const scaledFovH = fovH * scaleFactor;
+    const scaledObjW = objectW * scaleFactor;
+    const scaledObjH = objectH * scaleFactor;
+    objectBox.scale.set(scaledObjW, scaledObjH, (scaledObjW + scaledObjH) / 2);
+    objectBox.position.set(0, scaledObjH / 2, -scaledWD);
+    const fovPlaneZ = -scaledWD;
+    const halfFovW = scaledFovW / 2;
+    const halfFovH = scaledFovH / 2;
+    const positions = fovCone.geometry.attributes.position.array;
+    positions[0] = -0.5; positions[1] = 0.5 + 4; positions[2] = 2.5;
+    positions[3] = 0.5;  positions[4] = 0.5 + 4; positions[5] = 2.5;
+    positions[6] = -0.5; positions[7] = -0.5 + 4; positions[8] = 2.5;
+    positions[9] = 0.5;  positions[10] = -0.5 + 4; positions[11] = 2.5;
+    positions[12] = -halfFovW; positions[13] = halfFovH + scaledObjH / 2; positions[14] = fovPlaneZ;
+    positions[15] = halfFovW;  positions[16] = halfFovH + scaledObjH / 2; positions[17] = fovPlaneZ;
+    positions[18] = -halfFovW; positions[19] = -halfFovH + scaledObjH / 2; positions[20] = fovPlaneZ;
+    positions[21] = halfFovW;  positions[22] = -halfFovH + scaledObjH / 2; positions[23] = fovPlaneZ;
+    fovCone.geometry.attributes.position.needsUpdate = true;
+    fovCone.geometry.computeBoundingSphere();
+    controls.target.set(0, 5, -scaledWD / 2);
+}
+
+// --- Calculator Logic ---
 document.addEventListener('DOMContentLoaded', () => {
     const inputs = [
         'objectWidth', 'objectHeight', 'workingDistance', 'sensor', 
@@ -339,68 +408,45 @@ document.addEventListener('DOMContentLoaded', () => {
     const standardFocalLengths = [8, 12, 16, 25, 35, 50, 75, 100];
 
     function calculate() {
-        // 1. Read all input values and parse them
+        // 1. Read all input values
         const objectW = parseFloat(elements.objectWidth.value) || 0;
         const objectH = parseFloat(elements.objectHeight.value) || 0;
         const wd = parseFloat(elements.workingDistance.value) || 0;
         const [sensorH, sensorW] = elements.sensor.value.split(',').map(parseFloat);
         const resolutionW = parseInt(elements.resolutionW.value) || 0;
-        const resolutionH = parseInt(elements.resolutionH.value) || 0;
         const coverage = parseFloat(elements.coverage.value) / 100 || 0;
         const aperture = parseFloat(elements.aperture.value) || 0;
         const shutter = parseFloat(elements.shutterSpeed.value) || 0;
         const lightEV = parseInt(elements.lighting.value);
 
-        if (wd <= 0 || objectW <= 0 || coverage <= 0) {
-            // Avoid division by zero or nonsensical results
-            return;
-        }
+        if (wd <= 0 || objectW <= 0 || coverage <= 0) return;
 
         // 2. Core Calculations
-
-        // --- Ideal Focal Length ---
-        // The required Field of View is the object size scaled by the coverage
         const requiredFovW = objectW / coverage;
         const idealFocalLength = (sensorW * wd) / requiredFovW;
         document.getElementById('focalLength').textContent = idealFocalLength.toFixed(1);
 
-        // --- Standard Focal Length ---
-        // Find the closest standard focal length to the ideal one.
         const nearestFL = standardFocalLengths.reduce((prev, curr) => {
             return (Math.abs(curr - idealFocalLength) < Math.abs(prev - idealFocalLength) ? curr : prev);
         });
         document.getElementById('standardFocalLength').textContent = `${nearestFL}mm`;
 
-        // --- Actual Calculations (based on Standard Focal Length) ---
-        // All subsequent calculations should use the 'nearestFL' as it's the lens that would be used in reality.
-        
-        // --- Actual Field of View ---
         const actualFovW = (sensorW * wd) / nearestFL;
         const actualFovH = (sensorH * wd) / nearestFL;
         document.getElementById('fov').textContent = `${actualFovW.toFixed(1)} x ${actualFovH.toFixed(1)}`;
 
-        // --- Pixel Accuracy ---
         const accuracy = actualFovW / resolutionW;
         document.getElementById('accuracy').textContent = accuracy.toFixed(3);
 
         // --- Depth of Field ---
-        // Use nearestFL for DoF calculations.
         const sensorDiagonal = Math.sqrt(sensorW**2 + sensorH**2);
-        const coc = sensorDiagonal / 1500; // CoC based on sensor size
+        const coc = sensorDiagonal / 1500; // Circle of Confusion
         const hyperfocal = (nearestFL**2) / (aperture * coc) + nearestFL;
-        
         const dofNear = (hyperfocal * wd) / (hyperfocal + (wd - nearestFL));
-        let dofFar;
-        if (hyperfocal > wd) {
-            dofFar = (hyperfocal * wd) / (hyperfocal - (wd - nearestFL));
-        } else {
-            dofFar = Infinity; // Focused beyond hyperfocal distance, DoF extends to infinity
-        }
-        
+        let dofFar = (hyperfocal > wd) ? (hyperfocal * wd) / (hyperfocal - (wd - nearestFL)) : Infinity;
         const totalDof = dofFar - dofNear;
         
         if (isFinite(totalDof)) {
-            // Display the total depth range, which is more intuitive than +/-
             document.getElementById('dof').textContent = totalDof.toFixed(1);
             document.getElementById('dofRange').textContent = `${dofNear.toFixed(1)} ~ ${dofFar.toFixed(1)} mm`;
         } else {
@@ -411,40 +457,31 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- ISO Calculation ---
         const ev_at_100 = Math.log2((aperture**2) / shutter);
         const requiredISO = 100 * Math.pow(2, lightEV - ev_at_100);
-        
         const standardISOs = [100, 200, 400, 800, 1600, 3200, 6400, 12800];
         const nearestISO = standardISOs.reduce((prev, curr) => {
             return (Math.abs(curr - requiredISO) < Math.abs(prev - requiredISO) ? curr : prev);
         });
         document.getElementById('iso').textContent = nearestISO;
         
-        // 3. Update Diagram
-        document.getElementById('diag-wd').textContent = `WD: ${wd}mm`;
-        document.getElementById('diag-obj').textContent = `Obj H: ${objectH}mm`;
-
-        // Update diagram's light rays to reflect the actual FOV from the standard lens
-        const rayTop = document.getElementById('diag-ray-top');
-        const rayBottom = document.getElementById('diag-ray-bottom');
-        const diagramFovCenterY = 75;
-        
-        // The diagram's object is 60 SVG units high. We use the input object height to create a dynamic scale.
-        // This ensures the FOV cone scales relative to the object's size representation.
-        if (objectH > 0) {
-            const verticalScale = 60 / objectH; // SVG units per mm
-            const diagramFovYSpan = (actualFovH * verticalScale) / 2;
-            
-            rayTop.setAttribute('y2', (diagramFovCenterY - diagramFovYSpan).toFixed(2));
-            rayBottom.setAttribute('y2', (diagramFovCenterY + diagramFovYSpan).toFixed(2));
-        }
+        // 3. Update 3D Diagram
+        update3DDiagram({
+            wd: wd,
+            fovW: actualFovW,
+            fovH: actualFovH,
+            objectW: objectW,
+            objectH: objectH
+        });
     }
 
-    // Add event listeners to all inputs to trigger recalculation
+    // Add event listeners
     inputs.forEach(id => {
-        document.getElementById(id).addEventListener('input', calculate);
-        document.getElementById(id).addEventListener('change', calculate); // For select elements
+        const el = document.getElementById(id);
+        el.addEventListener('input', calculate);
+        el.addEventListener('change', calculate);
     });
 
-    // Initial calculation on page load
+    // Initial setup
+    init3D();
     calculate();
 });
 </script>

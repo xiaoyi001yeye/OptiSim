@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>机器视觉相机参数计算器 (Machine Vision Camera Calculator)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+        }
+        .input-group-title {
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            color: #111827;
+        }
+        .result-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: all 0.3s ease;
+        }
+        .result-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+        }
+        .result-value {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: #1d4ed8;
+            line-height: 1.1;
+        }
+        .result-unit {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #6b7280;
+            margin-left: 0.5rem;
+        }
+        .result-label {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.25rem;
+        }
+        .info-icon {
+            cursor: pointer;
+            display: inline-block;
+            margin-left: 8px;
+            color: #9ca3af;
+        }
+        .tooltip {
+            position: absolute;
+            background-color: #1f2937;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            z-index: 10;
+            width: max-content;
+            max-width: 250px;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .tooltip-container:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">机器视觉相机参数计算器</h1>
+            <p class="mt-2 text-lg text-gray-600">帮助您为视觉项目选择最合适的光学系统</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Input Column -->
+            <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg">
+                <h2 class="text-2xl font-bold mb-6">输入参数</h2>
+
+                <!-- Scene & Object Parameters -->
+                <div class="mb-6">
+                    <h3 class="input-group-title text-lg">1. 场景与物体</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="objectWidth" class="block text-sm font-medium text-gray-700">物体宽度 (mm)</label>
+                            <input type="number" id="objectWidth" value="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label for="objectHeight" class="block text-sm font-medium text-gray-700">物体高度 (mm)</label>
+                            <input type="number" id="objectHeight" value="80" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label for="workingDistance" class="block text-sm font-medium text-gray-700">工作距离 (mm)</label>
+                            <input type="number" id="workingDistance" value="500" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Camera & Sensor Parameters -->
+                <div class="mb-6">
+                    <h3 class="input-group-title text-lg">2. 相机与传感器</h3>
+                    <div>
+                        <label for="sensor" class="block text-sm font-medium text-gray-700">传感器尺寸</label>
+                        <select id="sensor" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="15.6,23.6">APS-C (23.6 x 15.6 mm)</option>
+                            <option value="24,36">全画幅 Full Frame (36 x 24 mm)</option>
+                            <option value="13,17.3">Micro 4/3 (17.3 x 13 mm)</option>
+                            <option value="8.8,13.2" selected>1" (13.2 x 8.8 mm)</option>
+                            <option value="7.18,9.5">2/3" (9.5 x 7.18 mm)</option>
+                            <option value="5.3,7.1">1/1.8" (7.1 x 5.3 mm)</option>
+                            <option value="4.8,6.4">1/2" (6.4 x 4.8 mm)</option>
+                            <option value="4.55,6.17">1/2.3" (6.17 x 4.55 mm)</option>
+                            <option value="3.42,4.54">1/3" (4.54 x 3.42 mm)</option>
+                        </select>
+                    </div>
+                    <div class="mt-4">
+                        <label for="resolutionW" class="block text-sm font-medium text-gray-700">相机分辨率 (像素)</label>
+                        <div class="flex items-center space-x-2 mt-1">
+                            <input type="number" id="resolutionW" value="1920" class="block w-full rounded-md border-gray-300 shadow-sm">
+                            <span class="text-gray-500">x</span>
+                            <input type="number" id="resolutionH" value="1080" class="block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Imaging Goal Parameters -->
+                <div class="mb-6">
+                    <h3 class="input-group-title text-lg">3. 成像目标</h3>
+                    <div>
+                        <label for="coverage" class="block text-sm font-medium text-gray-700">期望物体占画面宽度比例</label>
+                        <div class="flex items-center space-x-4 mt-1">
+                            <input type="range" id="coverage" min="10" max="100" value="80" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            <span id="coverageValue" class="font-semibold text-indigo-600 w-12 text-center">80%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exposure Parameters -->
+                <div>
+                    <h3 class="input-group-title text-lg">4. 曝光参数 (用于景深和ISO计算)</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="aperture" class="block text-sm font-medium text-gray-700">光圈 (F-number)</label>
+                            <select id="aperture" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="1.4">f/1.4</option>
+                                <option value="2">f/2</option>
+                                <option value="2.8">f/2.8</option>
+                                <option value="4">f/4</option>
+                                <option value="5.6" selected>f/5.6</option>
+                                <option value="8">f/8</option>
+                                <option value="11">f/11</option>
+                                <option value="16">f/16</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="shutterSpeed" class="block text-sm font-medium text-gray-700">快门速度 (s)</label>
+                            <select id="shutterSpeed" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="0.000125">1/8000</option>
+                                <option value="0.0005">1/2000</option>
+                                <option value="0.001">1/1000</option>
+                                <option value="0.002">1/500</option>
+                                <option value="0.004">1/250</option>
+                                <option value="0.0167" selected>1/60</option>
+                                <option value="0.033">1/30</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="lighting" class="block text-sm font-medium text-gray-700">光照环境</label>
+                            <select id="lighting" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="15">室外强光 (Sunny 16, EV15)</option>
+                                <option value="12">室外阴天 (Overcast, EV12)</option>
+                                <option value="8" selected>室内明亮 (Bright Indoor, EV8)</option>
+                                <option value="5">普通家庭 (Home Indoor, EV5)</option>
+                                <option value="2">弱光环境 (Low Light, EV2)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Column -->
+            <div class="lg:col-span-2">
+                <h2 class="text-2xl font-bold mb-6 text-center lg:text-left">计算结果</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Focal Length -->
+                    <div class="result-card md:col-span-2 bg-blue-50 border border-blue-200">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="result-label">
+                                    理想镜头焦距
+                                    <span class="tooltip-container relative">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 info-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
+                                        <span class="tooltip">这是为了让您的目标物体恰好填满您期望的画面宽度而计算出的理论焦距。请选择最接近此值的市售镜头。</span>
+                                    </span>
+                                </p>
+                                <div>
+                                    <span id="focalLength" class="result-value">25.6</span>
+                                    <span class="result-unit">mm</span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-medium text-gray-500">最近标准焦距</p>
+                                <p id="standardFocalLength" class="text-lg font-semibold text-blue-700">25mm</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Field of View -->
+                    <div class="result-card">
+                        <p class="result-label">
+                            视场 (FOV)
+                            <span class="tooltip-container relative">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 info-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
+                                <span class="tooltip">在当前工作距离下，您的相机实际能看到的物理区域大小。</span>
+                            </span>
+                        </p>
+                        <div>
+                            <span id="fov" class="result-value">125.0 x 83.3</span>
+                            <span class="result-unit">mm</span>
+                        </div>
+                    </div>
+
+                    <!-- Pixel Accuracy -->
+                    <div class="result-card">
+                        <p class="result-label">
+                            像素精度
+                            <span class="tooltip-container relative">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 info-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
+                                <span class="tooltip">每个像素代表的实际物理尺寸。值越小，能看到的细节越多，精度越高。</span>
+                            </span>
+                        </p>
+                        <div>
+                            <span id="accuracy" class="result-value">0.065</span>
+                            <span class="result-unit">mm/pixel</span>
+                        </div>
+                    </div>
+
+                    <!-- Depth of Field -->
+                    <div class="result-card">
+                        <p class="result-label">
+                            景深 (DoF)
+                            <span class="tooltip-container relative">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 info-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
+                                <span class="tooltip">在物体前后保持清晰对焦的范围。光圈越小(F值越大)，景深越大。</span>
+                            </span>
+                        </p>
+                        <div>
+                            <span id="dof" class="result-value">+/- 23.5</span>
+                            <span class="result-unit">mm</span>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-2">
+                            清晰范围: <span id="dofRange">476.5 ~ 523.5 mm</span>
+                        </div>
+                    </div>
+
+                    <!-- ISO -->
+                    <div class="result-card">
+                        <p class="result-label">
+                            建议 ISO
+                             <span class="tooltip-container relative">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 info-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
+                                <span class="tooltip">在您设定的光圈、快门和光照条件下，为获得正常曝光所需的感光度。如果值过高，请考虑补光或使用更大光圈的镜头。</span>
+                            </span>
+                        </p>
+                        <div>
+                            <span id="iso" class="result-value">400</span>
+                            <span class="result-unit"></span>
+                        </div>
+                    </div>
+                </div>
+                 <!-- Visual Diagram -->
+                <div class="mt-8 bg-white p-4 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-semibold mb-4 text-center">成像关系示意图</h3>
+                    <svg id="diagram" viewBox="0 0 400 150" class="w-full h-auto">
+                        <!-- Camera -->
+                        <rect x="10" y="55" width="40" height="40" fill="#cbd5e1" rx="5"></rect>
+                        <rect x="45" y="65" width="20" height="20" fill="#94a3b8"></rect>
+                        <line x1="65" y1="75" x2="100" y2="75" stroke="#94a3b8" stroke-width="2"></line>
+                        <!-- Sensor Plane -->
+                         <line x1="30" y1="40" x2="30" y2="110" stroke="#4f46e5" stroke-width="1.5" stroke-dasharray="3 2"></line>
+                         <text x="28" y="35" font-size="8" fill="#4f46e5" text-anchor="end">Sensor</text>
+                        <!-- Object -->
+                        <rect x="350" y="45" width="20" height="60" fill="#f59e0b" rx="3"></rect>
+                        <text x="360" y="115" font-size="8" fill="#d97706" text-anchor="middle">Object</text>
+                        <!-- Light Rays -->
+                        <line x1="100" y1="75" x2="350" y2="45" stroke="#fbbf24" stroke-width="0.5"></line>
+                        <line x1="100" y1="75" x2="350" y2="105" stroke="#fbbf24" stroke-width="0.5"></line>
+                        <!-- Dimensions -->
+                        <line x1="100" y1="120" x2="350" y2="120" stroke="#6b7280" stroke-width="1"></line>
+                        <line x1="100" y1="115" x2="100" y2="125" stroke="#6b7280" stroke-width="1"></line>
+                        <line x1="350" y1="115" x2="350" y2="125" stroke="#6b7280" stroke-width="1"></line>
+                        <text id="diag-wd" x="225" y="135" font-size="10" fill="#374151" text-anchor="middle">WD: 500mm</text>
+                        
+                        <line x1="380" y1="45" x2="380" y2="105" stroke="#6b7280" stroke-width="1"></line>
+                        <line x1="375" y1="45" x2="385" y2="45" stroke="#6b7280" stroke-width="1"></line>
+                        <line x1="375" y1="105" x2="385" y2="105" stroke="#6b7280" stroke-width="1"></line>
+                        <text id="diag-obj" x="390" y="78" font-size="10" fill="#374151" writing-mode="vertical-rl">Obj H: 80mm</text>
+
+                        <line x1="30" y1="55" x2="30" y2="95" stroke="#4f46e5" stroke-width="1.5" visibility="hidden" id="diag-sensor-line"></line>
+                        <text id="diag-sensor-text" x="20" y="78" font-size="8" fill="#4f46e5" writing-mode="vertical-rl" text-anchor="middle" visibility="hidden">15.6mm</text>
+                    </svg>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const inputs = [
+        'objectWidth', 'objectHeight', 'workingDistance', 'sensor', 
+        'resolutionW', 'resolutionH', 'coverage', 'aperture', 
+        'shutterSpeed', 'lighting'
+    ];
+    
+    const elements = {};
+    inputs.forEach(id => {
+        elements[id] = document.getElementById(id);
+    });
+
+    const coverageValue = document.getElementById('coverageValue');
+    elements.coverage.addEventListener('input', () => {
+        coverageValue.textContent = `${elements.coverage.value}%`;
+    });
+
+    const standardFocalLengths = [8, 12, 16, 25, 35, 50, 75, 100];
+
+    function calculate() {
+        // 1. Read all input values and parse them
+        const objectW = parseFloat(elements.objectWidth.value) || 0;
+        const objectH = parseFloat(elements.objectHeight.value) || 0;
+        const wd = parseFloat(elements.workingDistance.value) || 0;
+        const [sensorH, sensorW] = elements.sensor.value.split(',').map(parseFloat);
+        const resolutionW = parseInt(elements.resolutionW.value) || 0;
+        const resolutionH = parseInt(elements.resolutionH.value) || 0;
+        const coverage = parseFloat(elements.coverage.value) / 100 || 0;
+        const aperture = parseFloat(elements.aperture.value) || 0;
+        const shutter = parseFloat(elements.shutterSpeed.value) || 0;
+        const lightEV = parseInt(elements.lighting.value);
+
+        if (wd <= 0 || objectW <= 0 || coverage <= 0) {
+            // Avoid division by zero or nonsensical results
+            return;
+        }
+
+        // 2. Core Calculations
+        
+        // --- Focal Length ---
+        // The required Field of View is the object size scaled by the coverage
+        const fovW = objectW / coverage;
+        const fovH = objectH / coverage; // Also calculate for height for completeness
+        
+        // Using the thin lens equation (similar triangles):
+        // focalLength / sensorWidth = workingDistance / fovWidth
+        const focalLength = (sensorW * wd) / fovW;
+
+        document.getElementById('focalLength').textContent = focalLength.toFixed(1);
+
+        // Find nearest standard focal length
+        const nearestFL = standardFocalLengths.reduce((prev, curr) => {
+            return (Math.abs(curr - focalLength) < Math.abs(prev - focalLength) ? curr : prev);
+        });
+        document.getElementById('standardFocalLength').textContent = `${nearestFL}mm`;
+
+        // --- Field of View (using the calculated focal length) ---
+        const actualFovW = (sensorW * wd) / focalLength;
+        const actualFovH = (sensorH * wd) / focalLength;
+        document.getElementById('fov').textContent = `${actualFovW.toFixed(1)} x ${actualFovH.toFixed(1)}`;
+
+        // --- Pixel Accuracy ---
+        const accuracy = actualFovW / resolutionW;
+        document.getElementById('accuracy').textContent = accuracy.toFixed(3);
+
+        // --- Depth of Field ---
+        // Circle of Confusion (CoC) estimation. A common rule of thumb is diagonal/1500
+        const sensorDiagonal = Math.sqrt(sensorW**2 + sensorH**2);
+        const coc = sensorDiagonal / 1500; 
+
+        // Hyperfocal distance
+        const hyperfocal = (focalLength**2) / (aperture * coc) + focalLength;
+        
+        // DoF calculation
+        const dofNear = (hyperfocal * wd) / (hyperfocal + (wd - focalLength));
+        let dofFar;
+        if (hyperfocal > wd) {
+            dofFar = (hyperfocal * wd) / (hyperfocal - (wd - focalLength));
+        } else {
+            dofFar = Infinity; // If focused beyond hyperfocal, DoF extends to infinity
+        }
+        
+        const totalDof = dofFar - dofNear;
+        
+        if (isFinite(totalDof)) {
+            document.getElementById('dof').textContent = `± ${(totalDof / 2).toFixed(1)}`;
+            document.getElementById('dofRange').textContent = `${dofNear.toFixed(1)} ~ ${dofFar.toFixed(1)} mm`;
+        } else {
+            document.getElementById('dof').textContent = `∞`;
+            document.getElementById('dofRange').textContent = `${dofNear.toFixed(1)} mm ~ ∞`;
+        }
+
+        // --- ISO Calculation ---
+        // Using the EV formula: EV = log2(N^2 / t) where N is aperture, t is time
+        // Required ISO = 100 * 2^(Target_EV - EV_at_ISO100)
+        const ev_at_100 = Math.log2((aperture**2) / shutter);
+        const requiredISO = 100 * Math.pow(2, lightEV - ev_at_100);
+        
+        // Snap to standard ISO values
+        const standardISOs = [100, 200, 400, 800, 1600, 3200, 6400, 12800];
+        const nearestISO = standardISOs.reduce((prev, curr) => {
+            return (Math.abs(curr - requiredISO) < Math.abs(prev - requiredISO) ? curr : prev);
+        });
+        document.getElementById('iso').textContent = nearestISO;
+        
+        // 3. Update Diagram
+        document.getElementById('diag-wd').textContent = `WD: ${wd}mm`;
+        document.getElementById('diag-obj').textContent = `Obj H: ${objectH}mm`;
+    }
+
+    // Add event listeners to all inputs to trigger recalculation
+    inputs.forEach(id => {
+        document.getElementById(id).addEventListener('input', calculate);
+        document.getElementById(id).addEventListener('change', calculate); // For select elements
+    });
+
+    // Initial calculation on page load
+    calculate();
+});
+</script>
+
+</body>
+</html>
+
